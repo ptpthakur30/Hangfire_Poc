@@ -32,7 +32,8 @@ namespace Hangfire_Poc
             //changes the default check intervals of scheduling job default is 15 sec 
             var options = new BackgroundJobServerOptions
             {
-                SchedulePollingInterval = TimeSpan.FromMinutes(1)
+                SchedulePollingInterval = TimeSpan.FromMinutes(1),
+                //CancellationCheckInterval = TimeSpan.FromSeconds(5)
             };
             
             yield return new BackgroundJobServer(options);

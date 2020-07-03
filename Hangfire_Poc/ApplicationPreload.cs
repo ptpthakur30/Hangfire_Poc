@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-
-namespace Hangfire_Poc
+﻿namespace Hangfire_Poc
 {
     public class ApplicationPreload : System.Web.Hosting.IProcessHostPreloadClient
     {

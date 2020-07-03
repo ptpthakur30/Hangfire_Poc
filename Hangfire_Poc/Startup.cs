@@ -1,14 +1,11 @@
 ﻿using Hangfire;
 using Hangfire.Dashboard;
-using Hangfire.SqlServer;
 using Microsoft.Owin;
 using Owin;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Diagnostics;
 
-[assembly: OwinStartup(typeof(Hangfire_Poc.Startup))]
+[assembly: OwinStartup(friendlyName: "ProductionConfiguration", startupType: typeof(Hangfire_Poc.Startup))]
 
 namespace Hangfire_Poc
 {
@@ -47,7 +44,7 @@ namespace Hangfire_Poc
             };
 
         
-            app.UseHangfireDashboard("/hangfire", options);
+            app.UseHangfireDashboard("/myJobDashBoard", options);
             //to set the schedule check interval time to 1 min , default is 15 sec
             //var options = new BackgroundJobServerOptions
             //{
@@ -63,9 +60,10 @@ namespace Hangfire_Poc
             // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=316888
 
             //RecurringJob.AddOrUpdate("EmailSenderJobv2", () => es.SendEmail(), ConfigurationManager.AppSettings["CronValue"].ToString());
-            RecurringJob.AddOrUpdate("EmailSenderJobName", () => es.SendEmail(), ConfigurationManager.AppSettings["CronValue"].ToString());
-
-            if (Boolean.TryParse(ConfigurationManager.AppSettings["RemoveJob"].ToString(), out bool myBool))
+            
+            RecurringJob.AddOrUpdate("EmailSenderJobv1",() => es.SendEmail(), ConfigurationManager.AppSettings["CronValue"].ToString());
+            
+            if (bool.TryParse(ConfigurationManager.AppSettings["RemoveJob"].ToString(), out bool myBool))
             {
                 //Removes the recurring job
                 RecurringJob.RemoveIfExists(Helper.DefaultIfNull("EmailSenderJobName", "EmailSenderJob"));
@@ -91,6 +89,9 @@ namespace Hangfire_Poc
 
             // Allow all authenticated users to see the Dashboard (potentially dangerous).
             //return owinContext.Authentication.User.Identity.IsAuthenticated;
+
+            //You can also do
+            //return  HttpContext.Current.User.Identity.IsAuthenticated
             return true;
         }
     }

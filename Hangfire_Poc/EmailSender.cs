@@ -1,15 +1,65 @@
-﻿using System;
+﻿using Hangfire_Poc.Models;
+using System;
+using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Mail;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Hosting;
 
 namespace Hangfire_Poc
 {
     public class EmailSender : System.Web.UI.Page
     {
-        public bool SendEmail()
+        public async Task SendEmail()
+        {
+            Progress<EmailModel> progress = new Progress<EmailModel>();
+            progress.ProgressChanged += DebugEmailProgress;
+            CancellationTokenSource ctSource = new CancellationTokenSource();
+            ctSource.Cancel();
+            try
+            {
+                await SendEmailAsync(progress, ctSource.Token);
+            }
+            catch(OperationCanceledException ex)
+            {
+                Debug.WriteLine("Operation is cancelled"+ex.ToString());
+            }
+            
+        }
+
+        private void DebugEmailProgress(object sender, EmailModel e)
+        {
+             Debug.WriteLine($"The Emails Sent Percentage : {e.Percentage}%");
+        }
+
+        private async Task SendEmailAsync(IProgress<EmailModel> progress,CancellationToken token)
+        {
+            string emailReceivers = "ptpthakur30@gmail.com";
+            //List<Task<bool>> lstEmail = new List<Task<bool>>();
+            //foreach (var item in emailReceivers.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            //{
+            //     token.ThrowIfCancellationRequested();
+            //    lstEmail.Add(SendEmailAsync(item));
+            //}
+            //var result = await Task.WhenAll(lstEmail);
+            List<string> EmailList = new List<string>(emailReceivers.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
+            EmailModel emailModel = new EmailModel();
+            emailModel.TotalEmails = EmailList.Count;
+            token.ThrowIfCancellationRequested();
+            //need some changes here
+            await Task.Run(()=>Parallel.ForEach<string>(EmailList, email =>
+             {
+                 SendingEmailTo(email);
+                 emailModel.EmailsSent.Add(email);
+                 progress.Report(emailModel);
+             }));
+
+        }
+        public bool SendingEmailTo(string receiverName)
         {
             //Fetching Settings from WEB.CONFIG file.  
             string emailSender = ConfigurationManager.AppSettings["emailsender"].ToString();
@@ -41,7 +91,7 @@ namespace Hangfire_Poc
             _mailmsg.From = new MailAddress(emailSender);
 
             //Set To Email ID  
-            _mailmsg.To.Add("ptpthakur30@gmail.com");
+            _mailmsg.To.Add(receiverName);
 
             //Set Subject  
             _mailmsg.Subject = subject;
@@ -69,8 +119,8 @@ namespace Hangfire_Poc
             try
             {
                 //Send Method will send your MailMessage create above.  
-                _smtp.Send(_mailmsg);
-                return true;
+               _smtp.Send(_mailmsg);
+               return  true;
             }
             catch(Exception)
             {
